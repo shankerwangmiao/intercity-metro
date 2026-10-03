@@ -38,42 +38,13 @@ app.component("metro-line", {
 
 vm = app.mount("#lines-list");
 
-class Queue {
-  constructor(len) {
-    this.q = Array(len + 1);
-    this.head = 0;
-    this.tail = 0;
-    this.len = len + 1;
-  }
-  get front() {
-    return this.q[this.head];
-  }
-  get back() {
-    if (this.tail) return this.q[this.tail - 1];
-    else return this.q[this.len - 1];
-  }
-  push(v) {
-    this.q[this.tail] = v;
-    this.tail++;
-    if (this.tail >= this.len) this.tail = 0;
-  }
-  pop() {
-    this.head++;
-    if (this.head >= this.len) this.head = 0;
-  }
-  get size() {
-    if (this.tail >= this.head) return this.tail - this.head;
-    else return this.tail - this.head + this.len;
-  }
-}
-
 var lines;
-var stations = new Set();
-var station2line = new Map();
+const stations = new Set();
+const station2line = new Map();
 
 function load_json() {
-  var url = "metro.json";
-  var request = new XMLHttpRequest();
+  const url = "metro.json";
+  const request = new XMLHttpRequest();
   request.open("get", url);
   request.send(null);
   request.onload = function () {
@@ -81,22 +52,21 @@ function load_json() {
       lines = JSON.parse(request.responseText);
     }
     lines["成都"]["地铁1号线"]["stations"]["阿蒙森—斯科特"] = {};
-    for (var city in lines) {
-      for (var line in lines[city]) {
-        for (var station in lines[city][line]["stations"]) {
+    for (const city in lines) {
+      for (const line in lines[city]) {
+        for (const station in lines[city][line]["stations"]) {
           stations.add(station);
-          if (station in station2line) {
-            station2line[station].push([city, line]);
-          } else {
-            station2line[station] = [[city, line]];
+          if (!station2line.has(station)) {
+            station2line.set(station, []);
           }
+          station2line.get(station).push({city, line});
         }
       }
     }
-    var options="";
-    for (var station of stations)
-      options+='<option value="'+station+'" />';
-    document.getElementById("stations").innerHTML=options;
+    let options = "";
+    for (const station of stations)
+      options += '<option value="' + station + '" />';
+    document.getElementById("stations").innerHTML = options;
   };
 }
 
@@ -104,41 +74,56 @@ load_json();
 
 function getpath(beg, end) {
   if (!(stations.has(beg) && stations.has(end))) return [];
-  var N = stations.size;
-  var dis = new Map();
-  var last_line = new Map();
-  var last_station = new Map();
-  var q = new Queue(N);
-  dis[beg] = 0;
-  q.push(beg);
-  while (q.size) {
-    var t = q.front;
-    q.pop();
-    if (t == end) break;
-    for (var i in station2line[t]) {
-      var line = station2line[t][i];
-      for (var station in lines[line[0]][line[1]]["stations"]) {
-        if (dis[station] == undefined) {
-          dis[station] = dis[t] + 1;
-          last_line[station] = line;
-          last_station[station] = t;
-          q.push(station);
+  const queue = [];
+  const expanded = new Set();
+  let searchResult = null;
+
+  queue.push({
+    station: beg,
+    from: null,
+    distance: 0,
+  });
+  expanded.add(beg);
+
+  while (queue.length > 0) {
+    const front = queue.shift();
+    if (front.station === end) {
+      searchResult = front;
+      break;
+    }
+    for (const line of station2line.get(front.station)) {
+      for (const station in lines[line.city][line.line]["stations"]) {
+        if (!expanded.has(station)) {
+          expanded.add(station);
+          queue.push({
+            station: station,
+            from: {
+              station: front,
+              line: line,
+            },
+            distance: front.distance + 1,
+          });
         }
       }
     }
   }
-  if (dis[end] == undefined) return [];
-  var path = [];
-  var u = end;
-  while (u != beg) {
-    path.push({
-      start: last_station[u] + "站",
-      end: u + "站",
-      line: last_line[u][0] + last_line[u][1],
-      color: "#" + lines[last_line[u][0]][last_line[u][1]]["color"],
-    });
-    u = last_station[u];
+
+  if (!searchResult) {
+    return [];
   }
+
+  const path = [];
+  let currentStation = searchResult;
+  while (currentStation.from) {
+    path.push({
+      start: currentStation.from.station.station + "站",
+      end: currentStation.station + "站",
+      line: currentStation.from.line.city + currentStation.from.line.line,
+      color: "#" + lines[currentStation.from.line.city][currentStation.from.line.line]["color"],
+    })
+    currentStation = currentStation.from.station;
+  }
+
   path.reverse();
   return path;
 }
