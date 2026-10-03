@@ -81,6 +81,12 @@ cities = [
     {"name": "厦门", "id": "3502", "name_en": "xiamen"},
     {"name": "徐州", "id": "3203", "name_en": "xuzhou"},
     {"name": "郑州", "id": "4101", "name_en": "zhengzhou"},
+    {"name": "香港", "id": "8100", "name_en": "xianggang"},
+    {"name": "澳门", "id": "8200", "name_en": "aomen"},
+    {"name": "台北", "id": "7101", "name_en": "taibei"},
+    {"name": "高雄", "id": "7102", "name_en": "gaoxiong"},
+    {"name": "台中", "id": "7104", "name_en": "taizhong"},
+    {"name": "桃园", "id": "7106", "name_en": "taoyuan"},
 ]
 
 data = {}
