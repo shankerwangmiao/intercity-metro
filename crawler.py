@@ -40,6 +40,12 @@ def fix(city, line, wrong_name, correct_name):
     except KeyError:
         print(f"找不到{city}{line}下的“{wrong_name}”")
 
+def virt_link(station1, station2):
+    if "virtual_links" not in data or data["virtual_links"] is None:
+        data["virtual_links"] = []
+    data["virtual_links"].append([station1, station2])
+    print(f"已创建虚拟链接，连接站点 {station1} 和 {station2}")
+
 
 cities = [
     {"name": "北京", "id": "1100", "name_en": "beijing"},
@@ -101,5 +107,6 @@ for i in cities:
     time.sleep(1)
 
 fix("广州", "地铁9号线", "清布", "清㘵")
+virt_link("落马洲", "福田口岸")
 
 json.dump(data, open("metro.json", "w", encoding="utf8"), ensure_ascii=False)

@@ -41,6 +41,9 @@ vm = app.mount("#lines-list");
 var lines;
 const stations = new Set();
 const station2line = new Map();
+const virtual_links = new Map();
+
+const VIRTUAL_LINKS_KEY = "virtual_links";
 
 function load_json() {
   const url = "metro.json";
@@ -50,6 +53,13 @@ function load_json() {
   request.onload = function () {
     if (request.status == 200) {
       lines = JSON.parse(request.responseText);
+    }
+    if (VIRTUAL_LINKS_KEY in lines) {
+      for (const pair of lines[VIRTUAL_LINKS_KEY]) {
+        virtual_links.set(pair[0], pair[1]);
+        virtual_links.set(pair[1], pair[0]);
+      }
+      delete lines[VIRTUAL_LINKS_KEY];
     }
     lines["成都"]["地铁1号线"]["stations"]["阿蒙森—斯科特"] = {};
     for (const city in lines) {
@@ -91,18 +101,25 @@ function getpath(beg, end) {
       searchResult = front;
       break;
     }
-    for (const line of station2line.get(front.station)) {
-      for (const station in lines[line.city][line.line]["stations"]) {
-        if (!expanded.has(station)) {
-          expanded.add(station);
-          queue.push({
-            station: station,
-            from: {
-              station: front,
-              line: line,
-            },
-            distance: front.distance + 1,
-          });
+    const currentStations = [front.station];
+    if (virtual_links.has(front.station)) {
+      currentStations.push(virtual_links.get(front.station));
+    }
+    for (const currentStation of currentStations) {
+      for (const line of station2line.get(currentStation)) {
+        for (const station in lines[line.city][line.line]["stations"]) {
+          if (!expanded.has(station)) {
+            expanded.add(station);
+            queue.push({
+              station: station,
+              from: {
+                previous: front,
+                station: currentStation,
+                line: line,
+              },
+              distance: front.distance + 1,
+            });
+          }
         }
       }
     }
@@ -116,12 +133,12 @@ function getpath(beg, end) {
   let currentStation = searchResult;
   while (currentStation.from) {
     path.push({
-      start: currentStation.from.station.station + "站",
+      start: currentStation.from.station + "站",
       end: currentStation.station + "站",
       line: currentStation.from.line.city + currentStation.from.line.line,
       color: "#" + lines[currentStation.from.line.city][currentStation.from.line.line]["color"],
     })
-    currentStation = currentStation.from.station;
+    currentStation = currentStation.from.previous;
   }
 
   path.reverse();
