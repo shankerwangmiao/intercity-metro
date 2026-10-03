@@ -82,6 +82,23 @@ function load_json() {
 
 load_json();
 
+function generatePathStep(line, start, end) {
+  function getStationName(station) {
+    let stationInfo = lines[line.city][line.line]["stations"][station];
+    let name = station;
+    if (stationInfo && stationInfo.displayName)
+      name = stationInfo.displayName;
+    return name + "站";
+
+  }
+  return {
+    start: getStationName(start),
+    end: getStationName(end),
+    line: line.city + line.line,
+    color: "#" + lines[line.city][line.line]["color"],
+  };
+}
+
 function getpath(beg, end) {
   if (!(stations.has(beg) && stations.has(end))) return [];
   const queue = [];
@@ -132,12 +149,7 @@ function getpath(beg, end) {
   const path = [];
   let currentStation = searchResult;
   while (currentStation.from) {
-    path.push({
-      start: currentStation.from.station + "站",
-      end: currentStation.station + "站",
-      line: currentStation.from.line.city + currentStation.from.line.line,
-      color: "#" + lines[currentStation.from.line.city][currentStation.from.line.line]["color"],
-    })
+    path.push(generatePathStep(currentStation.from.line, currentStation.from.station, currentStation.station));
     currentStation = currentStation.from.previous;
   }
 
